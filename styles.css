@@ -12,6 +12,10 @@
   box-sizing: border-box;
 }
 
+[hidden] {
+  display: none !important;
+}
+
 body {
   min-width: 320px;
   min-height: 100vh;
@@ -139,7 +143,8 @@ textarea:focus {
 
 .save-button,
 .delete-button,
-.star-button {
+.star-button,
+.note-button {
   border-radius: 8px;
   cursor: pointer;
   font-weight: 700;
@@ -160,7 +165,8 @@ textarea:focus {
 
 .save-button:active,
 .delete-button:active,
-.star-button:active {
+.star-button:active,
+.note-button:active {
   transform: translateY(1px);
 }
 
@@ -253,6 +259,108 @@ textarea:focus {
 .star-button:focus-visible {
   border-radius: 5px;
   box-shadow: 0 0 0 2px #58a6ff;
+}
+
+.notes-section {
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid #202938;
+}
+
+.notes-heading {
+  margin: 0 0 0.85rem;
+  color: #c9d1d9;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.notes-list {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.note-item {
+  padding: 0.75rem;
+  border: 1px solid #273142;
+  border-radius: 8px;
+  background: #0b111b;
+}
+
+.note-content {
+  margin-bottom: 0.65rem;
+  color: #b7c0ca;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.note-actions {
+  display: flex;
+  gap: 0.45rem;
+}
+
+.note-form {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.note-add-form {
+  margin-top: 0.75rem;
+}
+
+.note-input {
+  min-height: 5rem;
+  padding: 0.65rem 0.7rem;
+  font-size: 0.9rem;
+}
+
+.note-button {
+  width: fit-content;
+  padding: 0.4rem 0.65rem;
+  border: 1px solid #364154;
+  background: transparent;
+  color: #aeb8c4;
+  font-size: 0.78rem;
+}
+
+.note-button:hover {
+  border-color: #58a6ff;
+  color: #dbe9f8;
+}
+
+.note-save-button {
+  border-color: #275d34;
+  color: #56d364;
+}
+
+.note-save-button:hover {
+  border-color: #3fb950;
+  background: rgba(63, 185, 80, 0.08);
+  color: #7ee787;
+}
+
+.note-delete-button {
+  color: #ff7b72;
+}
+
+.note-delete-button:hover {
+  border-color: #f85149;
+  background: rgba(248, 81, 73, 0.08);
+  color: #ff7b72;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 .delete-button {

@@ -19,6 +19,7 @@ function loadPrompts() {
       rating: Number.isInteger(prompt.rating) && prompt.rating >= 1 && prompt.rating <= 5
         ? prompt.rating
         : 0,
+      notes: Array.isArray(prompt.notes) ? prompt.notes : [],
     }));
   } catch {
     return [];
@@ -58,6 +59,152 @@ function setRating(id, rating) {
   prompt.rating = rating;
   savePrompts();
   renderPrompts();
+}
+
+function addNote(promptId, content) {
+  const prompt = prompts.find((savedPrompt) => savedPrompt.id === promptId);
+  const noteContent = content.trim();
+
+  if (!prompt || !noteContent) {
+    return;
+  }
+
+  prompt.notes.push({
+    id: crypto.randomUUID(),
+    content: noteContent,
+  });
+  savePrompts();
+  renderPrompts();
+}
+
+function updateNote(promptId, noteId, content) {
+  const prompt = prompts.find((savedPrompt) => savedPrompt.id === promptId);
+  const note = prompt?.notes.find((savedNote) => savedNote.id === noteId);
+  const noteContent = content.trim();
+
+  if (!note || !noteContent) {
+    return;
+  }
+
+  note.content = noteContent;
+  savePrompts();
+  renderPrompts();
+}
+
+function deleteNote(promptId, noteId) {
+  const prompt = prompts.find((savedPrompt) => savedPrompt.id === promptId);
+
+  if (!prompt) {
+    return;
+  }
+
+  prompt.notes = prompt.notes.filter((note) => note.id !== noteId);
+  savePrompts();
+  renderPrompts();
+}
+
+function createNoteItem(prompt, note) {
+  const item = document.createElement("article");
+  const content = document.createElement("p");
+  const actions = document.createElement("div");
+  const editButton = document.createElement("button");
+  const deleteButton = document.createElement("button");
+  const editForm = document.createElement("form");
+  const editLabel = document.createElement("label");
+  const editInput = document.createElement("textarea");
+  const saveButton = document.createElement("button");
+  const editInputId = `edit-note-${note.id}`;
+
+  item.className = "note-item";
+  content.className = "note-content";
+  content.textContent = note.content;
+  actions.className = "note-actions";
+
+  editButton.className = "note-button";
+  editButton.type = "button";
+  editButton.textContent = "Edit";
+
+  deleteButton.className = "note-button note-delete-button";
+  deleteButton.type = "button";
+  deleteButton.textContent = "Delete";
+  deleteButton.setAttribute("aria-label", `Delete note from ${prompt.title}`);
+  deleteButton.addEventListener("click", () => deleteNote(prompt.id, note.id));
+
+  editForm.className = "note-form note-edit-form";
+  editForm.hidden = true;
+  editLabel.className = "visually-hidden";
+  editLabel.htmlFor = editInputId;
+  editLabel.textContent = `Edit note for ${prompt.title}`;
+  editInput.className = "note-input";
+  editInput.id = editInputId;
+  editInput.rows = 3;
+  editInput.required = true;
+  editInput.value = note.content;
+  saveButton.className = "note-button note-save-button";
+  saveButton.type = "submit";
+  saveButton.textContent = "Save";
+
+  editButton.addEventListener("click", () => {
+    content.hidden = true;
+    actions.hidden = true;
+    editForm.hidden = false;
+    editInput.focus();
+  });
+
+  editForm.addEventListener("submit", (event) => {
+    event.preventDefault();
+    updateNote(prompt.id, note.id, editInput.value);
+  });
+
+  actions.append(editButton, deleteButton);
+  editForm.append(editLabel, editInput, saveButton);
+  item.append(content, actions, editForm);
+  return item;
+}
+
+function createNotesSection(prompt) {
+  const section = document.createElement("section");
+  const heading = document.createElement("h4");
+  const list = document.createElement("div");
+  const addForm = document.createElement("form");
+  const addLabel = document.createElement("label");
+  const addInput = document.createElement("textarea");
+  const addButton = document.createElement("button");
+  const headingId = `notes-heading-${prompt.id}`;
+  const addInputId = `new-note-${prompt.id}`;
+
+  section.className = "notes-section";
+  section.setAttribute("aria-labelledby", headingId);
+  heading.className = "notes-heading";
+  heading.id = headingId;
+  heading.textContent = "Notes";
+  list.className = "notes-list";
+
+  prompt.notes.forEach((note) => {
+    list.append(createNoteItem(prompt, note));
+  });
+
+  addForm.className = "note-form note-add-form";
+  addLabel.className = "visually-hidden";
+  addLabel.htmlFor = addInputId;
+  addLabel.textContent = `Add a note to ${prompt.title}`;
+  addInput.className = "note-input";
+  addInput.id = addInputId;
+  addInput.rows = 3;
+  addInput.placeholder = "Add a note...";
+  addInput.required = true;
+  addButton.className = "note-button note-save-button";
+  addButton.type = "submit";
+  addButton.textContent = "Add note";
+
+  addForm.addEventListener("submit", (event) => {
+    event.preventDefault();
+    addNote(prompt.id, addInput.value);
+  });
+
+  addForm.append(addLabel, addInput, addButton);
+  section.append(heading, list, addForm);
+  return section;
 }
 
 function createRatingComponent(prompt) {
@@ -113,6 +260,7 @@ function createPromptCard(prompt) {
   const title = document.createElement("h3");
   const preview = document.createElement("p");
   const rating = createRatingComponent(prompt);
+  const notes = createNotesSection(prompt);
   const deleteButton = document.createElement("button");
 
   card.className = "prompt-card";
@@ -125,7 +273,7 @@ function createPromptCard(prompt) {
   deleteButton.setAttribute("aria-label", `Delete ${prompt.title}`);
   deleteButton.addEventListener("click", () => deletePrompt(prompt.id));
 
-  card.append(title, preview, rating, deleteButton);
+  card.append(title, preview, rating, notes, deleteButton);
   return card;
 }
 
@@ -148,6 +296,7 @@ promptForm.addEventListener("submit", (event) => {
     title,
     content,
     rating: 0,
+    notes: [],
   });
 
   savePrompts();
