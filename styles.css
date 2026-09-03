@@ -138,7 +138,8 @@ textarea:focus {
 }
 
 .save-button,
-.delete-button {
+.delete-button,
+.star-button {
   border-radius: 8px;
   cursor: pointer;
   font-weight: 700;
@@ -158,7 +159,8 @@ textarea:focus {
 }
 
 .save-button:active,
-.delete-button:active {
+.delete-button:active,
+.star-button:active {
   transform: translateY(1px);
 }
 
@@ -187,15 +189,75 @@ textarea:focus {
 }
 
 .prompt-preview {
-  margin-bottom: 1.5rem;
+  margin-bottom: 1.25rem;
   color: #8b949e;
   line-height: 1.6;
   overflow-wrap: anywhere;
 }
 
+.rating-section {
+  padding-top: 1rem;
+  border-top: 1px solid #202938;
+}
+
+.rating-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.55rem;
+}
+
+.rating-label,
+.rating-status {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.72rem;
+}
+
+.rating-label {
+  color: #c9d1d9;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.rating-status {
+  color: #7d8590;
+}
+
+.star-rating {
+  display: flex;
+  width: fit-content;
+  gap: 0.15rem;
+}
+
+.star-button {
+  display: grid;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: #394354;
+  place-items: center;
+  font-size: 1.45rem;
+  line-height: 1;
+}
+
+.star-button.is-active {
+  color: #e3b341;
+  text-shadow: 0 0 14px rgba(227, 179, 65, 0.28);
+}
+
+.star-button:focus-visible {
+  border-radius: 5px;
+  box-shadow: 0 0 0 2px #58a6ff;
+}
+
 .delete-button {
   align-self: flex-start;
-  margin-top: auto;
+  margin-top: 1.25rem;
   padding: 0.5rem 0.75rem;
   border: 1px solid #49303a;
   background: transparent;

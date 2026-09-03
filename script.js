@@ -9,7 +9,17 @@ const promptList = document.querySelector("#prompt-list");
 function loadPrompts() {
   try {
     const savedPrompts = JSON.parse(localStorage.getItem(STORAGE_KEY));
-    return Array.isArray(savedPrompts) ? savedPrompts : [];
+
+    if (!Array.isArray(savedPrompts)) {
+      return [];
+    }
+
+    return savedPrompts.map((prompt) => ({
+      ...prompt,
+      rating: Number.isInteger(prompt.rating) && prompt.rating >= 1 && prompt.rating <= 5
+        ? prompt.rating
+        : 0,
+    }));
   } catch {
     return [];
   }
@@ -34,10 +44,75 @@ function deletePrompt(id) {
   renderPrompts();
 }
 
+function setRating(id, rating) {
+  if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
+    return;
+  }
+
+  const prompt = prompts.find((savedPrompt) => savedPrompt.id === id);
+
+  if (!prompt) {
+    return;
+  }
+
+  prompt.rating = rating;
+  savePrompts();
+  renderPrompts();
+}
+
+function createRatingComponent(prompt) {
+  const ratingSection = document.createElement("div");
+  const ratingHeader = document.createElement("div");
+  const ratingLabel = document.createElement("span");
+  const ratingStatus = document.createElement("span");
+  const stars = document.createElement("div");
+  const starButtons = [];
+
+  ratingSection.className = "rating-section";
+  ratingHeader.className = "rating-header";
+  ratingLabel.className = "rating-label";
+  ratingLabel.textContent = "Effectiveness";
+  ratingStatus.className = "rating-status";
+  ratingStatus.textContent = prompt.rating ? `${prompt.rating}/5` : "Not rated";
+  stars.className = "star-rating";
+  stars.setAttribute("role", "group");
+  stars.setAttribute("aria-label", `Rate ${prompt.title}`);
+
+  function previewRating(rating) {
+    starButtons.forEach((button, index) => {
+      button.classList.toggle("is-active", index < rating);
+      button.textContent = index < rating ? "★" : "☆";
+    });
+  }
+
+  for (let rating = 1; rating <= 5; rating += 1) {
+    const starButton = document.createElement("button");
+
+    starButton.className = "star-button";
+    starButton.type = "button";
+    starButton.textContent = "★";
+    starButton.setAttribute("aria-label", `${rating} out of 5 stars`);
+    starButton.setAttribute("aria-pressed", String(prompt.rating === rating));
+    starButton.addEventListener("mouseenter", () => previewRating(rating));
+    starButton.addEventListener("focus", () => previewRating(rating));
+    starButton.addEventListener("blur", () => previewRating(prompt.rating));
+    starButton.addEventListener("click", () => setRating(prompt.id, rating));
+    starButtons.push(starButton);
+    stars.append(starButton);
+  }
+
+  stars.addEventListener("mouseleave", () => previewRating(prompt.rating));
+  previewRating(prompt.rating);
+  ratingHeader.append(ratingLabel, ratingStatus);
+  ratingSection.append(ratingHeader, stars);
+  return ratingSection;
+}
+
 function createPromptCard(prompt) {
   const card = document.createElement("article");
   const title = document.createElement("h3");
   const preview = document.createElement("p");
+  const rating = createRatingComponent(prompt);
   const deleteButton = document.createElement("button");
 
   card.className = "prompt-card";
@@ -50,7 +125,7 @@ function createPromptCard(prompt) {
   deleteButton.setAttribute("aria-label", `Delete ${prompt.title}`);
   deleteButton.addEventListener("click", () => deletePrompt(prompt.id));
 
-  card.append(title, preview, deleteButton);
+  card.append(title, preview, rating, deleteButton);
   return card;
 }
 
@@ -72,6 +147,7 @@ promptForm.addEventListener("submit", (event) => {
     id: crypto.randomUUID(),
     title,
     content,
+    rating: 0,
   });
 
   savePrompts();
