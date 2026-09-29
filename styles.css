@@ -174,6 +174,48 @@ textarea:focus {
   margin-top: 3rem;
 }
 
+.checkbox-field {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  margin-top: 1.25rem;
+  line-height: 1.5;
+}
+
+.checkbox-field input {
+  width: 1.1rem;
+  height: 1.1rem;
+  flex-shrink: 0;
+  accent-color: #3fb950;
+}
+
+.library-hint { color: #8b949e; font-size: 0.85rem; }
+.app-error { color: #ff7b72; overflow-wrap: anywhere; }
+
+.prompt-metadata {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.65rem 0.8rem;
+  margin: 0 0 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid #202938;
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+
+.prompt-metadata dt { color: #8b949e; }
+.prompt-metadata dd { margin: 0; overflow-wrap: anywhere; }
+.confidence {
+  display: inline-block;
+  padding: 0.1rem 0.4rem;
+  border: 1px solid currentColor;
+  border-radius: 4px;
+  font-size: 0.7rem;
+}
+.confidence-high { color: #7ee787; background: #122b1c; }
+.confidence-medium { color: #e3b341; background: #302710; }
+.confidence-low { color: #ff7b72; background: #351c20; }
+
 .prompt-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 270px), 1fr));

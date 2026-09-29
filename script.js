@@ -4,32 +4,73 @@ const PREVIEW_WORD_LIMIT = 18;
 const promptForm = document.querySelector("#prompt-form");
 const titleInput = document.querySelector("#prompt-title");
 const contentInput = document.querySelector("#prompt-content");
+const modelInput = document.querySelector("#prompt-model");
+const codeInput = document.querySelector("#prompt-is-code");
+const errorMessage = document.querySelector("#app-error");
+let loadFailed = false;
+
+function showError(error) {
+  errorMessage.textContent = error.message;
+  errorMessage.hidden = false;
+}
+
 const promptList = document.querySelector("#prompt-list");
 
 function loadPrompts() {
   try {
     const savedPrompts = JSON.parse(localStorage.getItem(STORAGE_KEY));
 
+    if (savedPrompts === null) return [];
     if (!Array.isArray(savedPrompts)) {
-      return [];
+      throw new Error("Saved prompts must be an array. Stored data has been preserved.");
     }
 
-    return savedPrompts.map((prompt) => ({
-      ...prompt,
-      rating: Number.isInteger(prompt.rating) && prompt.rating >= 1 && prompt.rating <= 5
-        ? prompt.rating
-        : 0,
-      notes: Array.isArray(prompt.notes) ? prompt.notes : [],
-    }));
-  } catch {
+    let migrated = false;
+    const loaded = savedPrompts.map((prompt) => {
+      if (!prompt || typeof prompt.title !== "string" || typeof prompt.content !== "string") {
+        throw new Error("A saved prompt is invalid. Stored data has been preserved.");
+      }
+      let metadata = prompt.metadata;
+      if (metadata === undefined) {
+        metadata = trackModel("Unknown model", prompt.content);
+        migrated = true;
+      }
+      validateMetadata(metadata);
+      return {
+        ...prompt,
+        metadata,
+        rating: Number.isInteger(prompt.rating) && prompt.rating >= 1 && prompt.rating <= 5
+          ? prompt.rating : 0,
+        notes: Array.isArray(prompt.notes) ? prompt.notes : [],
+      };
+    });
+    if (migrated) localStorage.setItem(STORAGE_KEY, JSON.stringify(loaded));
+    return loaded;
+  } catch (error) {
+    loadFailed = true;
+    showError(new Error(`Unable to load prompts: ${error.message}`));
     return [];
   }
 }
 
 let prompts = loadPrompts();
 
-function savePrompts() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(prompts));
+// Save a separate draft first so storage or validation failures never change the UI state.
+function commitPrompts(change) {
+  try {
+    if (loadFailed) throw new Error("Unable to save because stored prompts could not be loaded. Resolve the storage error and reload first.");
+    const draft = JSON.parse(JSON.stringify(prompts));
+    change(draft);
+    draft.forEach((prompt) => validateMetadata(prompt.metadata));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(draft));
+    prompts = draft;
+    errorMessage.hidden = true;
+    renderPrompts();
+    return true;
+  } catch (error) {
+    showError(new Error(`Unable to save changes: ${error.message}`));
+    return false;
+  }
 }
 
 function createPreview(content) {
@@ -40,67 +81,88 @@ function createPreview(content) {
 }
 
 function deletePrompt(id) {
-  prompts = prompts.filter((prompt) => prompt.id !== id);
-  savePrompts();
-  renderPrompts();
+  commitPrompts((draft) => {
+    const index = draft.findIndex((prompt) => prompt.id === id);
+    if (index !== -1) draft.splice(index, 1);
+  });
+}
+
+function changePrompt(id, change) {
+  return commitPrompts((draft) => {
+    const prompt = draft.find((savedPrompt) => savedPrompt.id === id);
+    if (!prompt) throw new Error("Prompt could not be found.");
+    change(prompt);
+    prompt.metadata = updateTimestamps(prompt.metadata);
+  });
 }
 
 function setRating(id, rating) {
-  if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
-    return;
+  changePrompt(id, (prompt) => {
+    if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
+      throw new Error("Rating must be an integer from 1 to 5.");
+    }
+    prompt.rating = rating;
+  });
+}
+
+function noteText(content) {
+  if (typeof content !== "string" || !content.trim()) {
+    throw new Error("Note content must be a non-empty string.");
   }
-
-  const prompt = prompts.find((savedPrompt) => savedPrompt.id === id);
-
-  if (!prompt) {
-    return;
-  }
-
-  prompt.rating = rating;
-  savePrompts();
-  renderPrompts();
+  return content.trim();
 }
 
 function addNote(promptId, content) {
-  const prompt = prompts.find((savedPrompt) => savedPrompt.id === promptId);
-  const noteContent = content.trim();
-
-  if (!prompt || !noteContent) {
-    return;
-  }
-
-  prompt.notes.push({
-    id: crypto.randomUUID(),
-    content: noteContent,
+  changePrompt(promptId, (prompt) => {
+    prompt.notes.push({ id: crypto.randomUUID(), content: noteText(content) });
   });
-  savePrompts();
-  renderPrompts();
 }
 
 function updateNote(promptId, noteId, content) {
-  const prompt = prompts.find((savedPrompt) => savedPrompt.id === promptId);
-  const note = prompt?.notes.find((savedNote) => savedNote.id === noteId);
-  const noteContent = content.trim();
-
-  if (!note || !noteContent) {
-    return;
-  }
-
-  note.content = noteContent;
-  savePrompts();
-  renderPrompts();
+  changePrompt(promptId, (prompt) => {
+    const note = prompt.notes.find((savedNote) => savedNote.id === noteId);
+    if (!note) throw new Error("Note could not be found.");
+    note.content = noteText(content);
+  });
 }
 
 function deleteNote(promptId, noteId) {
-  const prompt = prompts.find((savedPrompt) => savedPrompt.id === promptId);
+  changePrompt(promptId, (prompt) => {
+    prompt.notes = prompt.notes.filter((note) => note.id !== noteId);
+  });
+}
 
-  if (!prompt) {
-    return;
+function createMetadataComponent(metadata) {
+  const list = document.createElement("dl");
+  list.className = "prompt-metadata";
+  function row(label, value) {
+    const term = document.createElement("dt");
+    const description = document.createElement("dd");
+    term.textContent = label;
+    description.append(value);
+    list.append(term, description);
   }
-
-  prompt.notes = prompt.notes.filter((note) => note.id !== noteId);
-  savePrompts();
-  renderPrompts();
+  row("Model", metadata.model);
+  for (const [field, label] of [["createdAt", "Created"], ["updatedAt", "Updated"]]) {
+    const time = document.createElement("time");
+    time.dateTime = metadata[field];
+    time.title = metadata[field];
+    time.textContent = new Date(metadata[field]).toLocaleString(undefined, {
+      year: "numeric", month: "short", day: "numeric",
+      hour: "2-digit", minute: "2-digit", second: "2-digit",
+    });
+    row(label, time);
+  }
+  const { min, max, confidence } = metadata.tokenEstimate;
+  const estimate = document.createElement("span");
+  // Short-word prompts can produce min > max under the requested formulas.
+  estimate.textContent = `Min: ${min.toLocaleString()} · Max: ${max.toLocaleString()} `;
+  const badge = document.createElement("span");
+  badge.className = `confidence confidence-${confidence}`;
+  badge.textContent = `${confidence} confidence`;
+  estimate.append(badge);
+  row("Tokens (est.)", estimate);
+  return list;
 }
 
 function createNoteItem(prompt, note) {
@@ -273,36 +335,33 @@ function createPromptCard(prompt) {
   deleteButton.setAttribute("aria-label", `Delete ${prompt.title}`);
   deleteButton.addEventListener("click", () => deletePrompt(prompt.id));
 
-  card.append(title, preview, rating, notes, deleteButton);
+  card.append(title, preview, createMetadataComponent(prompt.metadata), rating, notes, deleteButton);
   return card;
 }
 
 function renderPrompts() {
-  promptList.replaceChildren(...prompts.map(createPromptCard));
+  const sorted = [...prompts].sort((a, b) => b.metadata.createdAt.localeCompare(a.metadata.createdAt));
+  promptList.replaceChildren(...sorted.map(createPromptCard));
 }
 
 promptForm.addEventListener("submit", (event) => {
   event.preventDefault();
 
-  const title = titleInput.value.trim();
-  const content = contentInput.value.trim();
-
-  if (!title || !content) {
-    return;
-  }
-
-  prompts.unshift({
-    id: crypto.randomUUID(),
-    title,
-    content,
-    rating: 0,
-    notes: [],
+  const saved = commitPrompts((draft) => {
+    const title = titleInput.value.trim();
+    const content = contentInput.value.trim();
+    if (!title || !content) throw new Error("Title and prompt content are required.");
+    const metadata = trackModel(modelInput.value, content);
+    metadata.tokenEstimate = estimateTokens(content, codeInput.checked);
+    draft.unshift({
+      id: crypto.randomUUID(), title, content, metadata,
+      isCode: codeInput.checked, rating: 0, notes: [],
+    });
   });
-
-  savePrompts();
-  renderPrompts();
-  promptForm.reset();
-  titleInput.focus();
+  if (saved) {
+    promptForm.reset();
+    titleInput.focus();
+  }
 });
 
 renderPrompts();
