@@ -424,3 +424,26 @@ textarea:focus {
     padding: 2.5rem 0;
   }
 }
+
+.transfer-actions { display: flex; flex-wrap: wrap; gap: 0.65rem; margin: 1rem 0; }
+#transfer-status { color: #7ee787; line-height: 1.5; }
+dialog {
+  width: min(720px, calc(100% - 2rem));
+  max-height: 85vh;
+  overflow: auto;
+  padding: 1.5rem;
+  border: 1px solid #364154;
+  border-radius: 14px;
+  background: #0f1520;
+  color: #e6edf3;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+dialog::backdrop { background: rgba(0, 0, 0, 0.75); }
+select { max-width: 100%; padding: 0.65rem; font: inherit; color: #e6edf3; background: #090e17; border: 1px solid #364154; border-radius: 8px; }
+dialog label select { display: block; margin-top: 0.5rem; }
+dialog fieldset { min-width: 0; margin: 1rem 0; border: 1px solid #364154; border-radius: 8px; }
+dialog pre { max-height: 14rem; overflow: auto; white-space: pre-wrap; font-size: 0.8rem; }
+dialog details { margin-bottom: 0.75rem; }
+dialog summary { cursor: pointer; }
+button:focus-visible, select:focus-visible, summary:focus-visible { outline: 2px solid #58a6ff; outline-offset: 3px; }

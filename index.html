@@ -60,12 +60,37 @@
       <section class="library" aria-labelledby="saved-prompts-heading">
         <h2 id="saved-prompts-heading">Saved prompts</h2>
         <p class="library-hint">Newest first · Dates shown in your local time</p>
+        <div class="transfer-actions" role="group" aria-label="Import and export prompts">
+          <button id="export-prompts" class="note-button" type="button">Export JSON</button>
+          <button id="import-prompts" class="note-button" type="button">Import JSON</button>
+          <button id="download-backup" class="note-button" type="button">Download last backup</button>
+          <input id="import-file" type="file" accept=".json,application/json" hidden />
+        </div>
+        <p id="transfer-status" role="status" aria-live="polite"></p>
         <p id="app-error" class="app-error" role="alert" hidden></p>
         <div id="prompt-list" class="prompt-grid"></div>
       </section>
     </main>
 
-    <script src="metadata.js"></script>
+    <dialog id="import-dialog" aria-labelledby="import-heading">
+      <h2 id="import-heading">Import prompts</h2>
+      <p id="import-summary"></p>
+      <label for="import-mode">Import method</label>
+      <select id="import-mode">
+        <option value="merge">Merge with existing prompts</option>
+        <option value="replace">Replace the entire library</option>
+      </select>
+      <p id="replace-warning" class="app-error" hidden>Replace removes all current prompts, including when the imported library is empty. A backup will be saved first.</p>
+      <div id="import-conflicts"></div>
+      <p>A backup is required before saving. Each successful backup replaces the previous backup.</p>
+      <p id="import-error" class="app-error" role="alert" hidden></p>
+      <div class="transfer-actions">
+        <button id="confirm-import" class="note-button note-save-button" type="button">Import prompts</button>
+        <button id="cancel-import" class="note-button" type="button" autofocus>Cancel</button>
+        <button id="dialog-backup" class="note-button" type="button">Download last backup</button>
+      </div>
+    </dialog>
+
     <script src="script.js"></script>
   </body>
 </html>
